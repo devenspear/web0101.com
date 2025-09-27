@@ -1,34 +1,15 @@
-import { getSites } from '@/lib/sites'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import Particles from '@/components/Particles'
 
-export default async function HomePage() {
-  const sites = await getSites()
+export default function HomePage() {
   return (
-    <div className="space-y-6">
-      <section>
-        <h1 className="text-3xl font-semibold">Prototypes</h1>
-        <p className="text-gray-600">Directory of active prototypes hosted under web0101.com</p>
-      </section>
-      <ul className="divide-y divide-gray-200 border rounded">
-        {sites.length === 0 && (
-          <li className="p-4 text-gray-500">No sites yet. Create one in the Admin page.</li>
-        )}
-        {sites.map((s) => (
-          <li key={s.id} className="p-4 hover:bg-gray-50 flex items-center justify-between">
-            <div>
-              <div className="font-medium">{s.name}</div>
-              <div className="text-sm text-gray-600">{s.url}</div>
-            </div>
-            <div className="text-sm text-blue-600 space-x-4">
-              <a className="hover:underline" href={s.url} target="_blank" rel="noreferrer">Open</a>
-              {s.githubRepo && (
-                <a className="hover:underline" href={`https://github.com/${s.githubRepo}`} target="_blank" rel="noreferrer">Repo</a>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden rounded-lg">
+      <Particles />
+      <div className="relative z-10 text-center select-none">
+        <div className="text-6xl md:text-8xl font-extrabold tracking-tight drop-shadow-sm">HELLO WORLD</div>
+        <div className="mt-2 text-2xl md:text-3xl text-gray-700">hello world</div>
+      </div>
     </div>
   )
 }

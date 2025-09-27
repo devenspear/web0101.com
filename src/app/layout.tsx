@@ -15,7 +15,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <a href="/" className="text-2xl font-semibold">web0101.com</a>
             <nav className="text-sm text-gray-600 space-x-4">
               <a className="hover:underline" href="/">Home</a>
-              <a className="hover:underline" href="/admin">Admin</a>
             </nav>
           </header>
           <main>{children}</main>

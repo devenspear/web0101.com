@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { getSites } from '@/lib/sites'
 import { ROOT_DOMAIN } from '@/lib/config'
+import AdminClient from '@/components/AdminClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,37 +25,13 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <section>
+      <section className="rounded border p-4 bg-white shadow-sm">
         <h1 className="text-2xl font-semibold mb-2">Create / link a prototype</h1>
-        <p className="text-gray-600 mb-4">This will add a record to the registry and optionally attach a subdomain to an existing Vercel project.</p>
-        <form method="post" action="/api/sites" className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium">Name</label>
-            <input name="name" type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="My Prototype" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Subdomain</label>
-            <div className="mt-1 flex items-center">
-              <input name="subdomain" type="text" className="w-full rounded-l border px-3 py-2" placeholder="myproto" required />
-              <span className="rounded-r border border-l-0 px-3 py-2 text-sm bg-gray-50">.{ROOT_DOMAIN}</span>
-            </div>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium">GitHub repo (owner/name)</label>
-            <input name="githubRepo" type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="devenspear/my-prototype" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium">Vercel Project ID (optional)</label>
-            <input name="vercelProjectId" type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="prj_..." />
-            <p className="text-xs text-gray-500 mt-1">If provided, the subdomain will be attached to this Vercel project automatically.</p>
-          </div>
-          <div className="md:col-span-2">
-            <button className="rounded bg-black text-white px-4 py-2">Create</button>
-          </div>
-        </form>
+        <p className="text-gray-600 mb-4">Add a record to the registry and optionally attach a subdomain to an existing Vercel project.</p>
+        <AdminClient rootDomain={ROOT_DOMAIN} initialSites={sites} />
       </section>
 
-      <section>
+      <section className="rounded border p-4 bg-white shadow-sm">
         <h2 className="text-xl font-semibold mb-2">Existing prototypes</h2>
         <ul className="divide-y divide-gray-200 border rounded">
           {sites.length === 0 && (

@@ -8,15 +8,5 @@
     "vercelProjectId": "prj_Z8JzGU3oaQfq5eOeW5Xyk4NhyKKc",
     "createdAt": "2025-09-27T19:06:33.697Z",
     "status": "active"
-  },
-  {
-    "id": "thrive test",
-    "name": "ThrivemoreTechWeb",
-    "subdomain": "thrive test",
-    "url": "https://thrive test.web0101.com",
-    "githubRepo": "https://github.com/devenspear/ThrivemoreTechWeb",
-    "vercelProjectId": "prj_Z8JzGU3oaQfq5eOeW5Xyk4NhyKKc",
-    "createdAt": "2025-09-27T19:09:38.824Z",
-    "status": "active"
   }
 ]

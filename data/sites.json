@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "thrivetest",
+    "name": "ThrivemoreTest",
+    "subdomain": "thrivetest",
+    "url": "https://thrivetest.web0101.com",
+    "githubRepo": "https://github.com/devenspear/ThrivemoreTechWeb",
+    "vercelProjectId": "prj_Z8JzGU3oaQfq5eOeW5Xyk4NhyKKc",
+    "createdAt": "2025-09-27T19:06:33.697Z",
+    "status": "active"
+  }
+]

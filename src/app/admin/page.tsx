@@ -25,35 +25,10 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded border p-4 bg-white shadow-sm">
+      <section className="rounded-xl border border-gray-200 p-6 bg-white/80 shadow-lg backdrop-blur">
         <h1 className="text-2xl font-semibold mb-2">Create / link a prototype</h1>
         <p className="text-gray-600 mb-4">Add a record to the registry and optionally attach a subdomain to an existing Vercel project.</p>
         <AdminClient rootDomain={ROOT_DOMAIN} initialSites={sites} />
-      </section>
-
-      <section className="rounded border p-4 bg-white shadow-sm">
-        <h2 className="text-xl font-semibold mb-2">Existing prototypes</h2>
-        <ul className="divide-y divide-gray-200 border rounded">
-          {sites.length === 0 && (
-            <li className="p-4 text-gray-500">No sites yet.</li>
-          )}
-          {sites.map((s) => (
-            <li key={s.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-sm text-gray-600">{s.url}</div>
-                </div>
-                <div className="text-sm text-blue-600 space-x-4">
-                  <a className="hover:underline" href={s.url} target="_blank" rel="noreferrer">Open</a>
-                  {s.githubRepo && (
-                    <a className="hover:underline" href={`https://github.com/${s.githubRepo}`} target="_blank" rel="noreferrer">Repo</a>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   )

@@ -35,3 +35,25 @@ export async function addDomainAliasToProject(projectId: string, domain: string)
   } catch {}
   return { added: true, message }
 }
+
+export async function removeDomainAliasFromProject(projectId: string, domain: string): Promise<{ removed: boolean }> {
+  assertVercelToken()
+  const url = new URL(`${VC_API}/v2/projects/${projectId}/domains/${encodeURIComponent(domain)}`)
+  if (VERCEL_TEAM_ID) url.searchParams.set('teamId', VERCEL_TEAM_ID)
+
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${VERCEL_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  })
+
+  if (res.status === 404) return { removed: false }
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Vercel domain removal failed: ${res.status} ${text}`)
+  }
+  return { removed: true }
+}

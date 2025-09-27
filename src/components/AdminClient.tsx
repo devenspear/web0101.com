@@ -21,6 +21,7 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
   const [error, setError] = useState<string | null>(null)
   const [sites, setSites] = useState<Site[]>(initialSites)
   const [isPending, startTransition] = useTransition()
+  const [deleteBusy, setDeleteBusy] = useState<Record<string, boolean>>({})
 
   const suggested = useMemo(() => slugify(subdomain), [subdomain])
   const valid = useMemo(() => /^[a-z0-9-]{1,63}$/.test(suggested) && !suggested.startsWith('-') && !suggested.endsWith('-'), [suggested])
@@ -77,6 +78,25 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
     })
   }
 
+  async function onDelete(id: string) {
+    if (!confirm('Delete this prototype? This will detach the subdomain alias (if attached) and remove it from the registry.')) return
+    setDeleteBusy((m) => ({ ...m, [id]: true }))
+    try {
+      const res = await fetch(`/api/sites/${id}`, { method: 'DELETE', headers: { Accept: 'application/json' } })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) {
+        setError(data?.error || `Delete failed (${res.status})`)
+      } else {
+        setSites((prev) => prev.filter((s) => s.id !== id))
+        setMessage('Deleted successfully')
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Unexpected error')
+    } finally {
+      setDeleteBusy((m) => ({ ...m, [id]: false }))
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
@@ -116,6 +136,30 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
             {error}
           </div>
         )}
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-2">Existing prototypes</h2>
+          <ul className="divide-y divide-gray-200 border rounded">
+            {sites.length === 0 && <li className="p-4 text-gray-500">No sites yet.</li>}
+            {sites.map((s) => (
+              <li key={s.id} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{s.name} {s.status && (<span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 border">{s.status}</span>)}</div>
+                    <div className="text-sm text-gray-600">{s.url}</div>
+                  </div>
+                  <div className="text-sm space-x-3">
+                    <a className="text-blue-600 hover:underline" href={s.url} target="_blank" rel="noreferrer">Open</a>
+                    {s.githubRepo && (
+                      <a className="text-blue-600 hover:underline" href={s.githubRepo.startsWith('http') ? s.githubRepo : `https://github.com/${s.githubRepo}`} target="_blank" rel="noreferrer">Repo</a>
+                    )}
+                    <button onClick={() => onDelete(s.id)} disabled={!!deleteBusy[s.id]} className="text-red-600 hover:underline disabled:opacity-60">{deleteBusy[s.id] ? 'Deleting…' : 'Delete'}</button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <aside className="space-y-3">

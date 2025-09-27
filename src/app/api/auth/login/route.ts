@@ -11,12 +11,12 @@ export async function POST(req: Request) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
   const res = NextResponse.redirect(new URL('/admin', req.url))
+  // Session cookie (no maxAge) so a fresh browser session requires login again.
   res.cookies.set('admin', '1', {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
   })
   return res
 }

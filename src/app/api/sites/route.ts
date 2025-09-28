@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const session = readAdminSession(cookieStore.get(ADMIN_COOKIE_NAME)?.value)
   if (!session.valid) {
     const res = NextResponse.json({ ok: false, error: 'Session expired. Please sign in again.' }, { status: 401 })
-    res.cookies.delete(ADMIN_COOKIE_NAME, { path: '/' })
+    res.cookies.delete(ADMIN_COOKIE_NAME)
     return res
   }
 

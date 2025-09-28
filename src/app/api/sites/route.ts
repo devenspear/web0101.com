@@ -100,23 +100,31 @@ export async function POST(req: Request) {
 
     let aliasAdded = false
     let aliasMessage: string | undefined
+    let debugInfo: any = {}
 
     // Try to attach domain alias if project is provided
     if (vercelProjectId) {
+      console.log(`[SITES API] Attempting to attach domain ${domain} to project ${vercelProjectId}`)
       try {
         const res = await addDomainAliasToProject(vercelProjectId, domain)
         aliasAdded = !!res?.added
         aliasMessage = res?.message
+        debugInfo = res?.debugInfo || {}
+        console.log(`[SITES API] Domain attachment result:`, { aliasAdded, aliasMessage, debugInfo })
       } catch (e: any) {
+        console.error(`[SITES API] Domain attachment failed:`, e)
         aliasMessage = e?.message || 'Failed to attach domain alias'
+        debugInfo = { error: e?.message, stack: e?.stack }
       }
+    } else {
+      console.log(`[SITES API] No Vercel project ID provided, skipping domain attachment`)
     }
 
     const nextSites = [...sites, site]
     await commitSitesJson(nextSites, `Add site: ${name} (${id})`)
 
     if (wantsJson) {
-      return respond({ ok: true, site, aliasAdded, aliasMessage })
+      return respond({ ok: true, site, aliasAdded, aliasMessage, debugInfo })
     } else {
       // Redirect back to admin
       const res = NextResponse.redirect(new URL('/admin', req.url))

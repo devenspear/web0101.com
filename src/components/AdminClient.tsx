@@ -22,6 +22,8 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
   const [sites, setSites] = useState<Site[]>(initialSites)
   const [isPending, startTransition] = useTransition()
   const [deleteBusy, setDeleteBusy] = useState<Record<string, boolean>>({})
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [showDebug, setShowDebug] = useState(false)
 
   const suggested = useMemo(() => slugify(subdomain), [subdomain])
   const valid = useMemo(() => /^[a-z0-9-]{1,63}$/.test(suggested) && !suggested.startsWith('-') && !suggested.endsWith('-'), [suggested])
@@ -60,13 +62,29 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
           body: JSON.stringify(payload),
         })
         const data = await res.json().catch(() => ({}))
+        console.log('[ADMIN CLIENT] API Response:', {
+          status: res.status,
+          ok: res.ok,
+          data
+        })
+
         if (!res.ok || !data?.ok) {
+          console.error('[ADMIN CLIENT] Request failed:', { status: res.status, data })
           setError(data?.error || `Request failed (${res.status})`)
           return
         }
+
         const s = data.site as Site
         setSites((prev) => [...prev, s])
+
+        // Enhanced debugging for domain attachment
         const aliasNote = data.aliasAdded ? 'Alias added.' : data.aliasMessage ? `Alias: ${data.aliasMessage}` : 'Alias not added.'
+        console.log('[ADMIN CLIENT] Domain attachment details:', {
+          aliasAdded: data.aliasAdded,
+          aliasMessage: data.aliasMessage,
+          debugInfo: data.debugInfo
+        })
+
         setMessage(`Created ${s.name} at ${s.url}. ${aliasNote}`)
         setName('')
         setSubdomain('')
@@ -94,6 +112,17 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
       setError(e?.message || 'Unexpected error')
     } finally {
       setDeleteBusy((m) => ({ ...m, [id]: false }))
+    }
+  }
+
+  async function loadDebugInfo() {
+    try {
+      const res = await fetch('/api/debug')
+      const data = await res.json()
+      setDebugInfo(data)
+      setShowDebug(true)
+    } catch (err: any) {
+      setError(`Debug info failed: ${err.message}`)
     }
   }
 
@@ -239,6 +268,32 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
               Existing entries appear below; refresh if needed.
             </li>
           </ul>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
+          <div className="font-medium text-white/90 mb-3">Debug</div>
+          <button
+            onClick={loadDebugInfo}
+            className="text-sm bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Check System Status
+          </button>
+
+          {showDebug && debugInfo && (
+            <div className="mt-4">
+              <div className="text-xs text-white/60 mb-2">Environment:</div>
+              <div className="text-xs text-white/80 space-y-1">
+                <div>Token: {debugInfo.environment?.hasVercelToken ? '✅' : '❌'}</div>
+                <div>Team ID: {debugInfo.environment?.hasTeamId ? '✅' : '❌'}</div>
+                <div>API Test: {debugInfo.vercelApiTest?.ok ? '✅' : '❌'}</div>
+              </div>
+              {debugInfo.vercelApiTest?.error && (
+                <div className="text-xs text-red-400 mt-2">
+                  API Error: {debugInfo.vercelApiTest.error}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </aside>
     </div>

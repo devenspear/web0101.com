@@ -42,12 +42,19 @@ Specific subdomain requests go to the target project; all other subdomains fall 
 
 - Graduation: Detach from web0101 by adding a custom domain to the prototype’s Vercel project. Optionally mark `status: "graduated"` manually or by extending the admin.
 
+### Deployments, preview protection, and customer domains
+
+- The admin tool only wires up domains; it does **not** toggle Vercel preview/production protection. If a project has preview protection turned on, any alias pointed at a *preview* deployment will show the Vercel login wall to visitors.
+- To keep subdomains public, ensure there is a production deployment for the target project (push to the project’s production branch or run `vercel --prod`) and attach the alias after that build finishes. Production deployments are public even when preview protection remains on for previews.
+- If you intentionally want to drop preview protection programmatically, you would need to call Vercel’s `/v9/projects` API to update `passwordProtection` for the entire project. We currently leave this as a manual dashboard action for safety.
+
 ## Notes
 - The registry is fetched from GitHub raw content so directory updates appear without redeploys.
 - Later enhancements: automatic creation of GitHub repos from a template, automated Vercel project creation, search, tagging, archive/delete flows, shadcn/ui components.
+- Admin sessions last for up to one hour of inactivity. Re-authentication is required whenever a new browser session begins.
+- The public landing page and admin surfaces intentionally use a dark, glassmorphism-inspired theme; adjust Tailwind tokens in `src/app/globals.css` if you want to rebrand.
 
 ## Local development
 
 - `npm install`
 - `npm run dev`
-

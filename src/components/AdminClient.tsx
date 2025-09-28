@@ -28,6 +28,17 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
   const suggested = useMemo(() => slugify(subdomain), [subdomain])
   const valid = useMemo(() => /^[a-z0-9-]{1,63}$/.test(suggested) && !suggested.startsWith('-') && !suggested.endsWith('-'), [suggested])
 
+  // Project ID validation
+  const isValidProjectId = useMemo(() => {
+    if (!vercelProjectId.trim()) return true // Optional field
+    return /^prj_[a-zA-Z0-9]{26}$/.test(vercelProjectId.trim())
+  }, [vercelProjectId])
+
+  const projectIdWarning = useMemo(() => {
+    if (!vercelProjectId.trim() || isValidProjectId) return null
+    return 'Project ID should start with "prj_" followed by 26 characters'
+  }, [vercelProjectId, isValidProjectId])
+
   useEffect(() => {
     setError(null)
     setMessage(null)
@@ -70,22 +81,60 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
 
         if (!res.ok || !data?.ok) {
           console.error('[ADMIN CLIENT] Request failed:', { status: res.status, data })
-          setError(data?.error || `Request failed (${res.status})`)
+
+          // Enhanced error messaging based on status code
+          let errorMessage = data?.error || `Request failed (${res.status})`
+
+          if (res.status === 401) {
+            errorMessage = 'Authentication failed. Please refresh the page and sign in again.'
+          } else if (res.status === 403) {
+            errorMessage = 'Permission denied. Check your admin access and try again.'
+          } else if (res.status === 409) {
+            errorMessage = `Subdomain "${suggested}" already exists. Please choose a different name.`
+          } else if (res.status === 500) {
+            errorMessage = 'Server error occurred. Please check the console for details and try again.'
+          } else if (!res.ok && data?.error) {
+            // Server provided specific error message
+            errorMessage = data.error
+          }
+
+          setError(errorMessage)
           return
         }
 
         const s = data.site as Site
         setSites((prev) => [...prev, s])
 
-        // Enhanced debugging for domain attachment
-        const aliasNote = data.aliasAdded ? 'Alias added.' : data.aliasMessage ? `Alias: ${data.aliasMessage}` : 'Alias not added.'
+        // Enhanced success/warning messaging for domain attachment
         console.log('[ADMIN CLIENT] Domain attachment details:', {
           aliasAdded: data.aliasAdded,
           aliasMessage: data.aliasMessage,
           debugInfo: data.debugInfo
         })
 
-        setMessage(`Created ${s.name} at ${s.url}. ${aliasNote}`)
+        let statusMessage = `✅ Created ${s.name} and added to registry.`
+
+        if (data.aliasAdded) {
+          statusMessage += ` ✅ Domain ${s.subdomain}.${rootDomain} successfully attached to Vercel project.`
+          if (data.aliasMessage) {
+            statusMessage += ` (${data.aliasMessage})`
+          }
+        } else if (data.aliasMessage) {
+          // Domain attachment failed - provide detailed guidance
+          statusMessage += ` ⚠️ WARNING: Domain attachment failed - ${data.aliasMessage}`
+
+          if (data.aliasMessage.includes('Failed to attach domain alias')) {
+            statusMessage += `\n\n🔧 Troubleshooting:\n• Verify Project ID is correct (check Vercel dashboard)\n• Ensure VERCEL_TOKEN has domain permissions\n• Try the Project ID with 'TD' instead of 'Tb' (or vice versa) - Vercel has known UI/API inconsistencies`
+          }
+
+          if (data.debugInfo?.error) {
+            statusMessage += `\n\n📋 Technical Details: ${data.debugInfo.error}`
+          }
+        } else {
+          statusMessage += ` ⚠️ No Vercel Project ID provided - domain not attached.`
+        }
+
+        setMessage(statusMessage)
         setName('')
         setSubdomain('')
         setGithubRepo('')
@@ -171,10 +220,24 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
               value={vercelProjectId}
               onChange={(e) => setVercelProjectId(e.target.value)}
               type="text"
-              className="w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+              className={`w-full rounded-xl border backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:bg-white/10 focus:outline-none transition-all ${
+                projectIdWarning
+                  ? 'border-yellow-400/50 bg-yellow-400/5 focus:border-yellow-400/70'
+                  : 'border-white/10 bg-white/5 focus:border-white/20'
+              }`}
               placeholder="prj_..."
             />
-            <p className="text-xs text-white/40 mt-2">If provided, {suggested ? `${suggested}.${rootDomain}` : 'the subdomain'} will be attached to this Vercel project automatically.</p>
+            {projectIdWarning && (
+              <p className="text-xs text-yellow-400 mt-1">⚠️ {projectIdWarning}</p>
+            )}
+            <p className="text-xs text-white/40 mt-2">
+              If provided, {suggested ? `${suggested}.${rootDomain}` : 'the subdomain'} will be attached to this Vercel project automatically.
+              {vercelProjectId.trim() && (
+                <span className="block mt-1">
+                  💡 Tip: Copy from Vercel Dashboard → Project Settings → General → Project ID
+                </span>
+              )}
+            </p>
           </div>
           <div className="md:col-span-2">
             <button
@@ -188,12 +251,12 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
 
         {message && (
           <div className="mt-6 rounded-xl border border-green-400/20 bg-green-400/10 backdrop-blur-md p-4 text-green-300">
-            {message}
+            <div className="whitespace-pre-line">{message}</div>
           </div>
         )}
         {error && (
           <div className="mt-6 rounded-xl border border-red-400/20 bg-red-400/10 backdrop-blur-md p-4 text-red-300">
-            {error}
+            <div className="whitespace-pre-line">{error}</div>
           </div>
         )}
 
@@ -261,11 +324,19 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
             </li>
             <li className="flex items-start">
               <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
-              If aliasing fails, you can try again after fixing the Project ID.
+              Copy Project ID from Vercel Dashboard → Project Settings → General.
             </li>
             <li className="flex items-start">
               <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
-              Existing entries appear below; refresh if needed.
+              If domain attachment fails, try replacing 'TD' with 'Tb' in Project ID (or vice versa).
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Check browser console for detailed debugging information.
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Use "Check System Status" to verify Vercel API connectivity.
             </li>
           </ul>
         </div>
@@ -281,15 +352,31 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
 
           {showDebug && debugInfo && (
             <div className="mt-4">
-              <div className="text-xs text-white/60 mb-2">Environment:</div>
+              <div className="text-xs text-white/60 mb-2">System Status:</div>
               <div className="text-xs text-white/80 space-y-1">
-                <div>Token: {debugInfo.environment?.hasVercelToken ? '✅' : '❌'}</div>
-                <div>Team ID: {debugInfo.environment?.hasTeamId ? '✅' : '❌'}</div>
-                <div>API Test: {debugInfo.vercelApiTest?.ok ? '✅' : '❌'}</div>
+                <div>Vercel Token: {debugInfo.environment?.hasVercelToken ? '✅ Configured' : '❌ Missing'}</div>
+                <div>Team ID: {debugInfo.environment?.hasTeamId ? '✅ Configured' : '⚠️ Not set (using personal account)'}</div>
+                <div>API Access: {debugInfo.vercelApiTest?.ok ? '✅ Working' : '❌ Failed'}</div>
+                {debugInfo.vercelApiTest?.user && (
+                  <div className="text-green-400">
+                    Authenticated as: {debugInfo.vercelApiTest.user.username || debugInfo.vercelApiTest.user.email}
+                  </div>
+                )}
               </div>
+
               {debugInfo.vercelApiTest?.error && (
-                <div className="text-xs text-red-400 mt-2">
-                  API Error: {debugInfo.vercelApiTest.error}
+                <div className="mt-3 p-2 rounded bg-red-500/20 border border-red-500/30">
+                  <div className="text-xs text-red-300 font-medium">API Error:</div>
+                  <div className="text-xs text-red-200 mt-1">{debugInfo.vercelApiTest.error}</div>
+                  <div className="text-xs text-red-200/70 mt-2">
+                    💡 Check environment variables in Vercel dashboard
+                  </div>
+                </div>
+              )}
+
+              {debugInfo.vercelApiTest?.ok && (
+                <div className="mt-3 p-2 rounded bg-green-500/20 border border-green-500/30">
+                  <div className="text-xs text-green-300">✅ All systems operational - domain attachment should work!</div>
                 </div>
               )}
             </div>

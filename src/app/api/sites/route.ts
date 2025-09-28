@@ -105,19 +105,66 @@ export async function POST(req: Request) {
     // Try to attach domain alias if project is provided
     if (vercelProjectId) {
       console.log(`[SITES API] Attempting to attach domain ${domain} to project ${vercelProjectId}`)
-      try {
-        const res = await addDomainAliasToProject(vercelProjectId, domain)
-        aliasAdded = !!res?.added
-        aliasMessage = res?.message
-        debugInfo = res?.debugInfo || {}
-        console.log(`[SITES API] Domain attachment result:`, { aliasAdded, aliasMessage, debugInfo })
-      } catch (e: any) {
-        console.error(`[SITES API] Domain attachment failed:`, e)
-        aliasMessage = e?.message || 'Failed to attach domain alias'
-        debugInfo = { error: e?.message, stack: e?.stack }
+
+      // Helper function to try domain attachment with potential ID variations
+      async function tryDomainAttachment(projectId: string, attempt: number = 1): Promise<{added: boolean, message?: string, debugInfo?: any}> {
+        try {
+          const res = await addDomainAliasToProject(projectId, domain)
+          return {
+            added: !!res?.added,
+            message: res?.message,
+            debugInfo: res?.debugInfo || {}
+          }
+        } catch (e: any) {
+          const errorMsg = e?.message || 'Unknown error'
+          console.error(`[SITES API] Domain attachment attempt ${attempt} failed:`, e)
+
+          // Check if it's a "project not found" error and suggest alternatives
+          if (errorMsg.includes('404') || errorMsg.includes('not found') || errorMsg.includes('forbidden')) {
+            // Try common Vercel UI/API inconsistencies
+            if (attempt === 1) {
+              let alternativeId = projectId
+
+              // Convert TD to Tb and vice versa (known Vercel UI/API issue)
+              if (projectId.includes('TD')) {
+                alternativeId = projectId.replace('TD', 'Tb')
+                console.log(`[SITES API] Trying alternative project ID: ${alternativeId}`)
+                return tryDomainAttachment(alternativeId, 2)
+              } else if (projectId.includes('Tb')) {
+                alternativeId = projectId.replace('Tb', 'TD')
+                console.log(`[SITES API] Trying alternative project ID: ${alternativeId}`)
+                return tryDomainAttachment(alternativeId, 2)
+              }
+            }
+
+            return {
+              added: false,
+              message: `Project "${projectId}" not found. Verify the Project ID in your Vercel dashboard. Note: Vercel UI sometimes shows different characters than the API expects (TD vs Tb).`,
+              debugInfo: {
+                error: errorMsg,
+                suggestion: 'Double-check Project ID from Vercel dashboard settings',
+                attemptedIds: attempt === 1 ? [projectId] : [vercelProjectId, projectId]
+              }
+            }
+          }
+
+          return {
+            added: false,
+            message: `Domain attachment failed: ${errorMsg}`,
+            debugInfo: { error: errorMsg, projectId, attempt }
+          }
+        }
       }
+
+      const result = await tryDomainAttachment(vercelProjectId)
+      aliasAdded = result.added
+      aliasMessage = result.message
+      debugInfo = result.debugInfo || {}
+
+      console.log(`[SITES API] Final domain attachment result:`, { aliasAdded, aliasMessage, debugInfo })
     } else {
       console.log(`[SITES API] No Vercel project ID provided, skipping domain attachment`)
+      aliasMessage = 'No Project ID provided - domain will not be attached to Vercel'
     }
 
     const nextSites = [...sites, site]

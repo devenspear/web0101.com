@@ -18,5 +18,15 @@
     "vercelProjectId": "prj_s0wd78rhoh0mm6p4R3Zpm9GFwv5b",
     "createdAt": "2025-09-28T02:41:00.753Z",
     "status": "active"
+  },
+  {
+    "id": "homebuilderai",
+    "name": "HomebuilderAI",
+    "subdomain": "homebuilderai",
+    "url": "https://homebuilderai.web0101.com\n",
+    "githubRepo": "https://github.com/devenspear/HomebuilderAI",
+    "vercelProjectId": "prj_d9Tb5KazEvBN09axdUWTqY9kvcmt",
+    "createdAt": "2025-09-28T17:46:45.149Z",
+    "status": "active"
   }
 ]

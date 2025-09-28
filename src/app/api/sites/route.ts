@@ -4,6 +4,7 @@ import { ROOT_DOMAIN } from '@/lib/config'
 import type { Site } from '@/lib/types'
 import { commitSitesJson, fetchSitesAndSha } from '@/lib/github'
 import { addDomainAliasToProject } from '@/lib/vercel'
+import { ADMIN_COOKIE_NAME, adminCookieOptions, readAdminSession } from '@/lib/admin-session'
 
 function toSlugSubdomain(input: string) {
   // normalize and replace whitespace with hyphens
@@ -20,9 +21,18 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  // Simple admin check
-  if (cookies().get('admin')?.value !== '1') {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+  const cookieStore = cookies()
+  const session = readAdminSession(cookieStore.get(ADMIN_COOKIE_NAME)?.value)
+  if (!session.valid) {
+    const res = NextResponse.json({ ok: false, error: 'Session expired. Please sign in again.' }, { status: 401 })
+    res.cookies.delete(ADMIN_COOKIE_NAME, { path: '/' })
+    return res
+  }
+
+  function respond(body: Record<string, unknown>, init?: ResponseInit) {
+    const res = NextResponse.json(body, init)
+    res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
+    return res
   }
 
   const contentType = req.headers.get('content-type') || ''
@@ -48,14 +58,20 @@ export async function POST(req: Request) {
 
   if (!name || !subdomain) {
     const msg = 'Missing required fields'
-    return wantsJson ? NextResponse.json({ ok: false, error: msg }, { status: 400 }) : new NextResponse(msg, { status: 400 })
+    if (wantsJson) return respond({ ok: false, error: msg }, { status: 400 })
+    const res = new NextResponse(msg, { status: 400 })
+    res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
+    return res
   }
 
   const id = toSlugSubdomain(subdomain)
   // Validate final id
   if (!/^[a-z0-9-]{1,63}$/.test(id) || id.startsWith('-') || id.endsWith('-')) {
     const msg = 'Invalid subdomain. Use only letters, numbers, and hyphens.'
-    return wantsJson ? NextResponse.json({ ok: false, error: msg }, { status: 400 }) : new NextResponse(msg, { status: 400 })
+    if (wantsJson) return respond({ ok: false, error: msg }, { status: 400 })
+    const res = new NextResponse(msg, { status: 400 })
+    res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
+    return res
   }
 
   const domain = `${id}.${ROOT_DOMAIN}`
@@ -65,7 +81,10 @@ export async function POST(req: Request) {
     const { sites } = await fetchSitesAndSha()
     if (sites.some((s) => s.id === id)) {
       const msg = 'Subdomain already exists'
-      return wantsJson ? NextResponse.json({ ok: false, error: msg }, { status: 409 }) : new NextResponse(msg, { status: 409 })
+      if (wantsJson) return respond({ ok: false, error: msg }, { status: 409 })
+      const conflict = new NextResponse(msg, { status: 409 })
+      conflict.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
+      return conflict
     }
 
     const site: Site = {
@@ -97,15 +116,19 @@ export async function POST(req: Request) {
     await commitSitesJson(nextSites, `Add site: ${name} (${id})`)
 
     if (wantsJson) {
-      return NextResponse.json({ ok: true, site, aliasAdded, aliasMessage })
+      return respond({ ok: true, site, aliasAdded, aliasMessage })
     } else {
       // Redirect back to admin
       const res = NextResponse.redirect(new URL('/admin', req.url))
       res.headers.set('Cache-Control', 'no-store')
+      res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
       return res
     }
   } catch (err: any) {
     const msg = err?.message || 'Unexpected error'
-    return wantsJson ? NextResponse.json({ ok: false, error: msg }, { status: 500 }) : new NextResponse(msg, { status: 500 })
+    if (wantsJson) return respond({ ok: false, error: msg }, { status: 500 })
+    const res = new NextResponse(msg, { status: 500 })
+    res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
+    return res
   }
 }

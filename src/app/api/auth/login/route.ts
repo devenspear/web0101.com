@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ADMIN_PASSWORD } from '@/lib/config'
+import { ADMIN_COOKIE_NAME, adminCookieOptions } from '@/lib/admin-session'
 
 export async function POST(req: Request) {
   const form = await req.formData()
@@ -10,13 +11,8 @@ export async function POST(req: Request) {
   if (password !== ADMIN_PASSWORD) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
-  const res = NextResponse.redirect(new URL('/admin', req.url))
-  // Session cookie (no maxAge) so a fresh browser session requires login again.
-  res.cookies.set('admin', '1', {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-  })
+  const res = NextResponse.redirect(new URL('/admin/dashboard', req.url))
+  // Session cookie with one-hour inactivity TTL enforced server-side
+  res.cookies.set(ADMIN_COOKIE_NAME, String(Date.now()), adminCookieOptions)
   return res
 }

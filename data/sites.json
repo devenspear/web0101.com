@@ -8,5 +8,15 @@
     "vercelProjectId": "prj_Z8JzGU3oaQfq5eOeW5Xyk4NhyKKc",
     "createdAt": "2025-09-27T19:06:33.697Z",
     "status": "active"
+  },
+  {
+    "id": "pyp-beta",
+    "name": "Present Year Practice",
+    "subdomain": "pyp-beta",
+    "url": "https://pyp-beta.web0101.com\n",
+    "githubRepo": "https://github.com/devenspear/Present-Year-Practice",
+    "vercelProjectId": "prj_s0wd78rhoh0mm6p4R3Zpm9GFwv5b",
+    "createdAt": "2025-09-28T02:41:00.753Z",
+    "status": "active"
   }
 ]

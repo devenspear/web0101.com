@@ -100,75 +100,144 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <form onSubmit={onSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium">Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="My Prototype" required />
+            <label className="block text-sm font-medium text-white/80 mb-2">Name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              type="text"
+              className="w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+              placeholder="My Prototype"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium">Subdomain</label>
-            <div className="mt-1">
-              <input value={subdomain} onChange={(e) => setSubdomain(e.target.value)} type="text" className="w-full rounded border px-3 py-2" placeholder="myproto" required />
-              <div className="mt-1 text-xs text-gray-600">Final: <span className={valid ? 'text-green-600' : 'text-red-600'}>{suggested || '—'}</span>.{rootDomain}</div>
+            <label className="block text-sm font-medium text-white/80 mb-2">Subdomain</label>
+            <div>
+              <input
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value)}
+                type="text"
+                className="w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+                placeholder="myproto"
+                required
+              />
+              <div className="mt-2 text-xs text-white/50">Final: <span className={valid ? 'text-green-400' : 'text-red-400'}>{suggested || '—'}</span>.{rootDomain}</div>
             </div>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium">GitHub repo (owner/name or URL)</label>
-            <input value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="devenspear/my-prototype" />
+            <label className="block text-sm font-medium text-white/80 mb-2">GitHub repo (owner/name or URL)</label>
+            <input
+              value={githubRepo}
+              onChange={(e) => setGithubRepo(e.target.value)}
+              type="text"
+              className="w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+              placeholder="devenspear/my-prototype"
+            />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium">Vercel Project ID (optional)</label>
-            <input value={vercelProjectId} onChange={(e) => setVercelProjectId(e.target.value)} type="text" className="mt-1 w-full rounded border px-3 py-2" placeholder="prj_..." />
-            <p className="text-xs text-gray-500 mt-1">If provided, {suggested ? `${suggested}.${rootDomain}` : 'the subdomain'} will be attached to this Vercel project automatically.</p>
+            <label className="block text-sm font-medium text-white/80 mb-2">Vercel Project ID (optional)</label>
+            <input
+              value={vercelProjectId}
+              onChange={(e) => setVercelProjectId(e.target.value)}
+              type="text"
+              className="w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 text-white placeholder-white/40 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+              placeholder="prj_..."
+            />
+            <p className="text-xs text-white/40 mt-2">If provided, {suggested ? `${suggested}.${rootDomain}` : 'the subdomain'} will be attached to this Vercel project automatically.</p>
           </div>
           <div className="md:col-span-2">
-            <button disabled={isPending} className="rounded bg-black text-white px-4 py-2 disabled:opacity-60">{isPending ? 'Creating…' : 'Create'}</button>
+            <button
+              disabled={isPending}
+              className="rounded-xl bg-white/10 hover:bg-white/20 text-white px-6 py-3 backdrop-blur-md border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isPending ? 'Creating…' : 'Create'}
+            </button>
           </div>
         </form>
 
         {message && (
-          <div className="mt-4 rounded border border-green-200 bg-green-50 p-3 text-green-800">
+          <div className="mt-6 rounded-xl border border-green-400/20 bg-green-400/10 backdrop-blur-md p-4 text-green-300">
             {message}
           </div>
         )}
         {error && (
-          <div className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-red-800">
+          <div className="mt-6 rounded-xl border border-red-400/20 bg-red-400/10 backdrop-blur-md p-4 text-red-300">
             {error}
           </div>
         )}
 
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-2">Existing prototypes</h2>
-          <ul className="divide-y divide-gray-200 border rounded">
-            {sites.length === 0 && <li className="p-4 text-gray-500">No sites yet.</li>}
+          <h2 className="text-xl font-semibold mb-4 text-white/90">Existing prototypes</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl divide-y divide-white/10">
+            {sites.length === 0 && (
+              <div className="p-6 text-white/50 text-center">No sites yet.</div>
+            )}
             {sites.map((s) => (
-              <li key={s.id} className="p-4">
+              <div key={s.id} className="p-6 hover:bg-white/5 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">{s.name} {s.status && (<span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 border">{s.status}</span>)}</div>
-                    <div className="text-sm text-gray-600">{s.url}</div>
+                    <div className="font-medium text-white/90 flex items-center">
+                      {s.name}
+                      {s.status && (
+                        <span className="ml-3 text-xs px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/70">
+                          {s.status}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-white/60 mt-1">{s.url}</div>
                   </div>
-                  <div className="text-sm space-x-3">
-                    <a className="text-blue-600 hover:underline" href={s.url} target="_blank" rel="noreferrer">Open</a>
+                  <div className="text-sm space-x-4 flex items-center">
+                    <a
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                      href={s.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open
+                    </a>
                     {s.githubRepo && (
-                      <a className="text-blue-600 hover:underline" href={s.githubRepo.startsWith('http') ? s.githubRepo : `https://github.com/${s.githubRepo}`} target="_blank" rel="noreferrer">Repo</a>
+                      <a
+                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                        href={s.githubRepo.startsWith('http') ? s.githubRepo : `https://github.com/${s.githubRepo}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Repo
+                      </a>
                     )}
-                    <button onClick={() => onDelete(s.id)} disabled={!!deleteBusy[s.id]} className="text-red-600 hover:underline disabled:opacity-60">{deleteBusy[s.id] ? 'Deleting…' : 'Delete'}</button>
+                    <button
+                      onClick={() => onDelete(s.id)}
+                      disabled={!!deleteBusy[s.id]}
+                      className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {deleteBusy[s.id] ? 'Deleting…' : 'Delete'}
+                    </button>
                   </div>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
 
-      <aside className="space-y-3">
-        <div className="rounded border p-3">
-          <div className="font-medium">Tips</div>
-          <ul className="mt-2 list-disc pl-5 text-sm text-gray-600 space-y-1">
-            <li>Use a short subdomain; only letters, numbers, and hyphens.</li>
-            <li>If aliasing fails, you can try again after fixing the Project ID.</li>
-            <li>Existing entries appear below; refresh if needed.</li>
+      <aside className="space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
+          <div className="font-medium text-white/90 mb-3">Tips</div>
+          <ul className="space-y-2 text-sm text-white/60">
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Use a short subdomain; only letters, numbers, and hyphens.
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              If aliasing fails, you can try again after fixing the Project ID.
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Existing entries appear below; refresh if needed.
+            </li>
           </ul>
         </div>
       </aside>

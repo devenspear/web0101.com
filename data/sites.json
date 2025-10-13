@@ -47,15 +47,5 @@
     "vercelProjectId": "prj_wA5hSLPf2MCal9mRRH9xzRD4xsVV",
     "createdAt": "2025-10-12T15:26:54.445Z",
     "status": "active"
-  },
-  {
-    "id": "geo",
-    "name": "Generative Engine Optimization",
-    "subdomain": "geo",
-    "url": "https://geo.web0101.com\n",
-    "githubRepo": "https://github.com/devenspear/AI-Auditor-App1",
-    "vercelProjectId": "prj_VGIke0dduAt8I8V3d4yEsFFIAXUc",
-    "createdAt": "2025-10-13T00:18:05.116Z",
-    "status": "active"
   }
 ]

@@ -24,6 +24,9 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
   const [deleteBusy, setDeleteBusy] = useState<Record<string, boolean>>({})
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [showDebug, setShowDebug] = useState(false)
+  const [healthStatus, setHealthStatus] = useState<Record<string, any>>({})
+  const [healthCheckLoading, setHealthCheckLoading] = useState(false)
+  const [refreshingAlias, setRefreshingAlias] = useState<Record<string, boolean>>({})
 
   const suggested = useMemo(() => slugify(subdomain), [subdomain])
   const valid = useMemo(() => /^[a-z0-9-]{1,63}$/.test(suggested) && !suggested.startsWith('-') && !suggested.endsWith('-'), [suggested])
@@ -175,6 +178,66 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
     }
   }
 
+  async function checkAliasHealth() {
+    setHealthCheckLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/sites/health')
+      const data = await res.json()
+
+      if (!res.ok || !data.ok) {
+        setError(data.error || 'Health check failed')
+        return
+      }
+
+      const statusMap: Record<string, any> = {}
+      data.healthChecks.forEach((check: any) => {
+        statusMap[check.id] = check
+      })
+      setHealthStatus(statusMap)
+      setMessage('Health check completed')
+    } catch (err: any) {
+      setError(`Health check failed: ${err.message}`)
+    } finally {
+      setHealthCheckLoading(false)
+    }
+  }
+
+  async function refreshAlias(siteId: string, subdomain: string, vercelProjectId: string) {
+    if (!vercelProjectId) {
+      setError('No Vercel Project ID configured for this site')
+      return
+    }
+
+    setRefreshingAlias(prev => ({ ...prev, [siteId]: true }))
+    setError(null)
+    setMessage(null)
+
+    try {
+      const res = await fetch('/api/sites/refresh-alias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subdomain, vercelProjectId }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.ok) {
+        setError(data.error || 'Failed to refresh alias')
+        return
+      }
+
+      setMessage(`✅ Successfully refreshed ${subdomain}.${rootDomain} to latest deployment`)
+
+      // Re-check health after refresh
+      await checkAliasHealth()
+    } catch (err: any) {
+      setError(`Failed to refresh alias: ${err.message}`)
+    } finally {
+      setRefreshingAlias(prev => ({ ...prev, [siteId]: false }))
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
@@ -261,55 +324,94 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
         )}
 
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4 text-white/90">Existing prototypes</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white/90">Existing prototypes</h2>
+            <button
+              onClick={checkAliasHealth}
+              disabled={healthCheckLoading}
+              className="text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 px-4 py-2 rounded-lg border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {healthCheckLoading ? 'Checking...' : '🔍 Check Health'}
+            </button>
+          </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl divide-y divide-white/10">
             {sites.length === 0 && (
               <div className="p-6 text-white/50 text-center">No sites yet.</div>
             )}
-            {sites.map((s) => (
-              <div key={s.id} className="p-6 hover:bg-white/5 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-white/90 flex items-center">
-                      {s.name}
-                      {s.status && (
-                        <span className="ml-3 text-xs px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/70">
-                          {s.status}
-                        </span>
+            {sites.map((s) => {
+              const health = healthStatus[s.id]
+              return (
+                <div key={s.id} className="p-6 hover:bg-white/5 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-white/90 flex items-center flex-wrap gap-2">
+                        {s.name}
+                        {s.status && (
+                          <span className="text-xs px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/70">
+                            {s.status}
+                          </span>
+                        )}
+                        {health && (
+                          <span className={`text-xs px-3 py-1 rounded-full border ${
+                            health.status === 'healthy'
+                              ? 'bg-green-500/20 border-green-400/30 text-green-300'
+                              : health.status === 'no-project'
+                              ? 'bg-gray-500/20 border-gray-400/30 text-gray-300'
+                              : 'bg-yellow-500/20 border-yellow-400/30 text-yellow-300'
+                          }`}>
+                            {health.status === 'healthy' && '✅ Healthy'}
+                            {health.status === 'stale' && '⚠️ Stale'}
+                            {health.status === 'error' && '❌ Error'}
+                            {health.status === 'no-project' && '⚪ No Project'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-white/60 mt-1">{s.url}</div>
+                      {health && health.message && (
+                        <div className="text-xs text-white/40 mt-1">{health.message}</div>
                       )}
                     </div>
-                    <div className="text-sm text-white/60 mt-1">{s.url}</div>
-                  </div>
-                  <div className="text-sm space-x-4 flex items-center">
-                    <a
-                      className="text-blue-400 hover:text-blue-300 transition-colors"
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open
-                    </a>
-                    {s.githubRepo && (
+                    <div className="text-sm space-x-3 flex items-center">
                       <a
                         className="text-blue-400 hover:text-blue-300 transition-colors"
-                        href={s.githubRepo.startsWith('http') ? s.githubRepo : `https://github.com/${s.githubRepo}`}
+                        href={s.url}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Repo
+                        Open
                       </a>
-                    )}
-                    <button
-                      onClick={() => onDelete(s.id)}
-                      disabled={!!deleteBusy[s.id]}
-                      className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {deleteBusy[s.id] ? 'Deleting…' : 'Delete'}
-                    </button>
+                      {s.githubRepo && (
+                        <a
+                          className="text-blue-400 hover:text-blue-300 transition-colors"
+                          href={s.githubRepo.startsWith('http') ? s.githubRepo : `https://github.com/${s.githubRepo}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Repo
+                        </a>
+                      )}
+                      {s.vercelProjectId && (
+                        <button
+                          onClick={() => refreshAlias(s.id, s.subdomain, s.vercelProjectId!)}
+                          disabled={!!refreshingAlias[s.id]}
+                          className="text-cyan-400 hover:text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Refresh alias to latest production deployment"
+                        >
+                          {refreshingAlias[s.id] ? 'Refreshing...' : '🔄 Refresh'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onDelete(s.id)}
+                        disabled={!!deleteBusy[s.id]}
+                        className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {deleteBusy[s.id] ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
@@ -337,6 +439,14 @@ export default function AdminClient({ rootDomain, initialSites }: { rootDomain: 
             <li className="flex items-start">
               <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
               Use "Check System Status" to verify Vercel API connectivity.
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Click "Check Health" to verify all subdomains are pointing to correct deployments.
+            </li>
+            <li className="flex items-start">
+              <span className="block w-1 h-1 rounded-full bg-white/40 mt-2 mr-3 flex-shrink-0"></span>
+              Use "Refresh" button to update a subdomain to its latest production deployment.
             </li>
           </ul>
         </div>

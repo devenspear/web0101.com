@@ -39,16 +39,6 @@
     "status": "active"
   },
   {
-    "id": "aiauditor",
-    "name": "AI-Auditor1.0",
-    "subdomain": "aiauditor",
-    "url": "https://aiauditor.web0101.com\n",
-    "githubRepo": "https://github.com/devenspear/AI-Auditor-App1",
-    "vercelProjectId": "prj_VGIke0dduAt8I8V3d4yEsFFIAXUc",
-    "createdAt": "2025-10-07T21:10:35.252Z",
-    "status": "active"
-  },
-  {
     "id": "nvizstudio",
     "name": "NVision Studio",
     "subdomain": "nvizstudio",

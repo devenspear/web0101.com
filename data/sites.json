@@ -30,15 +30,6 @@
     "status": "active"
   },
   {
-    "id": "ai-auditor",
-    "name": "ai-auditor",
-    "subdomain": "ai-auditor",
-    "url": "https://ai-auditor.web0101.com",
-    "githubRepo": "https://github.com/devenspear/ai-auditor",
-    "createdAt": "2025-10-01T18:49:58.911Z",
-    "status": "active"
-  },
-  {
     "id": "geo",
     "name": "Generative Engine Optimization",
     "subdomain": "geo",
